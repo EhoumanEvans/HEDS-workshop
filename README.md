@@ -1,5 +1,5 @@
 # HEDS-workshop
-R and RStudio workshop for the higher education data sharing consortium
+R and RStudio workshop for the Higher Education Data Sharing Consortium Conference
 Sunday, June 18, beginning at 1:30 p.m 
 
 # Workshop Information
@@ -12,7 +12,11 @@ Our entire analysis process will be conducted in RStudio (data import, manipulat
 
 # Workshop Materials
 
-This repository contains all of the data and code needed for the workshop as well as instructions on how to install R and RStudio.  The slides for the workshop can be found <a href="https://docs.google.com/presentation/d/11GWOihHr0eaIKlly4DwgspvRJUBx3C0IDWcu8kgVkQw/edit?usp=sharing">here</a>.    
+This repository contains all of the data and code needed for the workshop as well as instructions on how to install R and RStudio.  The slides for the workshop can be found <a href="https://docs.google.com/presentation/d/11GWOihHr0eaIKlly4DwgspvRJUBx3C0IDWcu8kgVkQw/edit?usp=sharing" target="_blank">here</a>.    
+
+# Installing R and RStudio
+
+Instructions for installing R and RStudio prior to the workshop on a <a href="http://www.reed.edu/data-at-reed/software/R/r_studio.html" target="_blank">Mac</a> or a <a href="http://www.reed.edu/data-at-reed/software/R/r_studio_pc.html" target="_blank">PC</a> can be found at these links. 
 
 # Instructor 
 
