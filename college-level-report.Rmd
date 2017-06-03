@@ -1,0 +1,211 @@
+---
+title: "Example IPEDS Analysis"
+author: "Your Name Here"
+date: "June 18th, 2017"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+
+# install packages (only run once)
+# install.packages(c("tidyverse",
+#                    "stringr",
+#                    "knitr",
+#                    "ggthemes",
+#                    "maps",
+#                    "scales"))
+
+# load packages
+library(tidyverse)
+library(stringr)
+library(knitr)
+library(ggthemes)
+library(maps)
+library(scales)
+
+# store the location of your data files
+# copy and paste the file path here
+directory <- "path/to/directory/ipeds_data/"
+
+# read in one ipeds .csv to examine the data file 
+ipeds1516 <- read.csv(paste0(directory, "ipeds_4yr_colleges_2015_16.csv"))
+
+# look at overview information of data file
+str(ipeds1516) # note that name and state are factors
+head(ipeds1516)
+
+# define new colnames
+new_colnames <- c("id", "name", "lon", "lat", 
+                  "state", "fips", "sector", "level", "control",
+                  "admit-rate", "admit-rate-men", "admit-rate-women", "yield", "yield-men",
+                  "yield-women", "yield-fulltime", "yield-fulltime-men", "yield-fulltime-women", 
+                  "yield-partime", "yield-parttime-men", "yield-parttime-women")
+
+# list all files in directory
+files <- list.files(directory)
+
+# read in all files in directory into data frame called ipeds
+ipeds <- c()
+
+for(i in files){ # for each file...
+  # read in the file and replace column names
+  tmp <- read.csv(paste0(directory, i), col.names = new_colnames) 
+  # create year var using 6th and 5th to last characters of  file name
+  tmp$year <- paste0("20", str_sub(i, -6, -5)) 
+  # stack rows onto data frame that will contain all files
+  ipeds <- rbind(tmp, ipeds) 
+  }
+
+```
+
+## Graph Example
+
+```{r graph, echo=FALSE, fig.align='center', fig.width=10}
+
+# create subset of ipeds data for analysis
+ipeds %>% 
+  # filter data to include only public and private 4 year non-profit institutions
+  filter(sector %in% c(1, 2)) %>% 
+  # recode sector variable to character from factor
+  mutate(sector = ifelse(sector == 1, "Public", "Private")) %>% 
+  # filter data to include only certain colleges or univerisities
+  filter(id %in% c(173258, 161086, 161004, 209922)) %>% 
+  # select relevant variables for admit rate analysis
+  select(id, name, year, admit.rate, lat, lon) %>% 
+  # arrange data subset by name and year and store in a new data frame
+  arrange(name, year) -> admit_rate_college_subset
+
+# create a plot of admit rate for data subset
+ggplot(data = admit_rate_college_subset, 
+       # plot admit rate over year by name 
+       aes(x = year, y = admit.rate, group = name, color = name)) + 
+  # create a line graph
+  geom_line(size = 2) +
+  # add a title
+  ggtitle("Here is my graph!") +
+  # force the y-axis to start at 0 
+  ylim(0, max(admit_rate_college_subset$admit.rate)) +
+  # apply the tufte style to the graph
+  theme_tufte() +
+  # move the legend to the bottom of the graph and center the title
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) + 
+  # change the axis and legend labeles
+  labs(color = "Admit Rate", x = "Year", y = "Admit Rate") 
+
+
+```
+  
+  
+## Faceted Graph Example
+
+```{r graph-facet, echo=FALSE, fig.align='center', fig.width=10}
+
+# create a plot of admit rate for data subset
+ggplot(data = admit_rate_college_subset, 
+       # plot admit rate over year by name 
+       aes(x = year, y = admit.rate, group = name, fill = name)) + 
+  # create a bar graph
+  geom_bar(size = 2, stat = "identity") +
+  # add a title
+  ggtitle("Here is my graph!") +
+  # force the y-axis to start at 0 
+  ylim(0, max(admit_rate_college_subset$admit.rate)) +
+  # apply the tufte style to the graph
+  theme_tufte() +
+  # move the legend to the bottom of the graph and center the title
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust = 0.5)) + 
+  # change the axis and legend labeles
+  labs(fill = "Admit Rate", x = "Year", y = "Admit Rate") +
+  # change the colors used in the graph 
+  scale_fill_manual(values = c("red","blue", "dark green", "grey")) +
+  # facet the graph by name
+  facet_wrap(~name) 
+
+```
+
+
+
+## Table Example
+
+I can include text directly in my analysis workflow! Yes, this is great!
+
+My text can be varaible. For example, the admit rate at `r admit_rate_college_subset$name[1]` in `r admit_rate_college_subset$year[1]` was `r percent(admit_rate_college_subset$admit.rate[1]/100)`.
+
+```{r table, echo=FALSE}
+
+# create a data table of data subset
+admit_rate_college_subset %>% 
+  # drop id and coords from table
+  select(-id, -lat, -lon) %>% 
+  # format admit rate variable for table
+  mutate(admit.rate = percent(admit.rate/100)) %>% 
+  # reshape data using key (year) value (admit.rate) pair
+  spread(year, admit.rate) %>% 
+  # create table with caption
+  kable(caption = "Here is my table!")
+
+
+```
+
+
+## Map Example
+
+```{r map, echo=FALSE}
+
+# load state boundaries for mapping
+states <- map_data("state")
+#head(states)
+
+# format subset for mapping
+ipeds_map_data <-
+admit_rate_college_subset %>% 
+  # select only the most recent year for mapping admit rates
+  filter(year == max(year)) %>% 
+  # keep only the first word of institutions' names
+  mutate(name = str_extract(name, "^\\w+")) %>% 
+  # drop undeeded variables
+  select(-year, - id)
+
+# create map and store in an object called mymap
+mymap <-
+# create plot
+ggplot() +
+  # add state boundaries
+  geom_polygon(data = states, aes(x = long, y = lat, group = group), color = "grey", fill = "white") + 
+  # add points for institutions colored by admit rate
+  geom_point(data = ipeds_map_data, aes(x = lon, y = lat, color = admit.rate)) +
+  # add institution text labels
+  geom_text(data = ipeds_map_data, hjust = .5, vjust = -.5,  
+            aes(x = lon, y = lat, label = name), color = "black", size = 2) +
+  # apply void theme to plot
+  theme_void() +
+  # move legend to bottom and center title
+    theme(legend.position="bottom",
+          plot.title = element_text(hjust = 0.5)) + 
+  # change legend label 
+  labs(color = "Admit Rate")
+
+# print my map
+mymap
+
+# additional geocoding example
+# library(ggmap)
+# geocode("Colby College")
+# twine_coords <- data.frame(geocode("biggest ball of twine"))
+# 
+# mymap +
+#   geom_point(data = twine_coords, aes(x = lon, y = lat), color = "orange") +
+#   geom_text(data = twine_coords, hjust = .5, vjust = -.5,  
+#             aes(x = lon, y = lat, label = "Biggest Ball of Twine"), color = "black", size = 2)
+# ls(ipeds_map_data)
+
+
+
+
+```
+
+
+
